@@ -1,6 +1,6 @@
 /**
  * username-generator
- *  A utility used for generating believable usernames.
+ *  A utility used for generating random usernames.
  *
  * @version 1.0.0
  * @author VolgemutNik
@@ -8,23 +8,52 @@
 
 const supportedMethods = ["bruteforce", "dictionary", "auto"];
 
-const {elementInArray} = require("./util/methods");
+const {
+    elementInArray,
+    validateType,
+    fetchText
+} = require("./util/methods");
+
+/*
+    Default settings.
+ */
+const dMethod = "auto";
+const dAmount = 10;
+const dWodlist = ["./res/nouns.txt", "./res/adjectives.txt"];
 
 /**
  * Generate a collection of
- * @param settings
+ * @param {object} settings - Update the settings of the UsernameGenerator instance.
  */
-const usernameGenerator =
-    (settings) => {
+const usernameGenerator = () => {
+    return (settings) => {
         settings = settings || {};
-        if(typeof(settings) !== "object")
-            throw new Error("Settings must be of type 'object'!");
+        validateType(settings, "object");
 
-        settings.method = settings.method || "auto";
-        if(!elementInArray(settings.method, supportedMethods))
+        /*
+            Method of generation
+         */
+        settings.method = settings.method || dMethod;
+        validateType(settings.method, "string");
+
+        if (!elementInArray(settings.method, supportedMethods))
             throw new Error(`Method not supported(${settings.method}). Please consult the documentation for a list of all available methods.`);
 
-        settings.template = settings.template || "";
-    }
+        /*
+            The amount of usernames we are generating
+         */
+        settings.amount = settings.amount || dAmount;
+        validateType(settings.amount, "number");
+
+        if (settings.amount < 0)
+            throw new Error("Amount of generated usernames can't be negative.");
+
+        /*
+            The wordlist(s) to use
+         */
+        settings.wordlist = settings.wordlist || "";
+
+    };
+}
 
 module.exports = usernameGenerator();
