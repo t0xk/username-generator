@@ -38,6 +38,43 @@ const validateType = (t, ...type) => {
 }
 
 /**
+ * A unified solution for calling the get method of both node:http and node:https modules.
+ *  Introduced as a fix for a duplicate code block warning.
+ *
+ * @param obj An object that represents either the http or https node module.
+ * @param parsed {URL} Holds remote host data.
+ * @private
+ */
+const _get = (obj, parsed) => {
+    if (!obj
+        || typeof (obj) !== typeof (http)
+        || typeof (obj) !== typeof (https)) {
+        throw new Error(`The 'obj' parameter holds an invalid value. Must either represent node:http or node:https!`);
+    }
+
+    obj.get(parsed,
+        (res) => {
+            const {statusCode} = res;
+
+            if (statusCode >= 200 && statusCode <= 299) { //2XX is considered success
+                let data = "";
+                res.setEncoding("utf-8");
+                res.on("data",
+                    (chunk => {
+                        data += chunk;
+                    }));
+                res.on("end",
+                    () => {
+                        console.log(`Received data:\n${data}`);
+                        //TODO: Actual data processing.
+                    });
+            } else {
+                throw new Error(`An error has occurred while sending the GET request. Host has returned status code ${statusCode}.`);
+            }
+        });
+}
+
+/**
  * Fetch content as text from a URL.
  *
  * @param url {string} - A string containing a valid URL.
@@ -48,30 +85,11 @@ const fetchText = (url) => {
     (async () => {
         switch (parsed.protocol) {
             case "http":
-                http.get(parsed,
-                    (res) => {
-                        const {statusCode} = res;
-
-                        if (statusCode >= 200 && statusCode <= 299) { //2XX is considered success
-                            let data = "";
-                            res.setEncoding("utf-8");
-                            res.on("data",
-                                (chunk => {
-                                    data += chunk;
-                                }));
-                            res.on("end",
-                                () => {
-                                    console.log(`Received data:\n${data}`);
-                                    // Actual data processing. Will a return statement work?
-                                });
-                        } else {
-                            throw new Error(`An error has occurred while sending the GET request. Host has returned status code ${statusCode}.`);
-                        }
-                    });
+                _get(http, parsed);
                 break;
 
             case "https":
-
+                _get(https, parsed);
                 break;
 
             //TODO: more protocol implementations
