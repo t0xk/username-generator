@@ -19,7 +19,7 @@ const {
  */
 const dMethod = "auto";
 const dAmount = 10;
-const dWodlist = ["./res/nouns.txt", "./res/adjectives.txt"];
+const dWordlist = ["./res/nouns.txt", "./res/adjectives.txt"];
 
 /**
  * Generate a collection of
@@ -51,7 +51,8 @@ const usernameGenerator = () => {
         /*
             The wordlist(s) to use
          */
-        settings.wordlist = settings.wordlist || "";
+        settings.wordlist = settings.wordlist || dWordlist;
+        //TODO: implement loading from URLS and files(both text and csv)
 
     };
 }

@@ -1,3 +1,7 @@
+const {URL} = require("url");
+const http = require("http");
+const https = require("https");
+
 /**
  * Returns *true* if the element is found in the array, *false* otherwise.
  *
@@ -28,7 +32,6 @@ const validateType = (t, ...type) => {
     for (let ty in type) {
         if (typeof (t) === ty)
             return true;
-
     }
 
     throw new Error(`Variable can't be of type ${typeof (t)}. Expected type(s): ${JSON.stringify(type)}.`);
@@ -40,8 +43,41 @@ const validateType = (t, ...type) => {
  * @param url {string} - A string containing a valid URL.
  */
 const fetchText = (url) => {
-    (async () => {
+    const parsed = new URL(url); //throws TypeError if url is not a string and/or parse-able
 
+    (async () => {
+        switch (parsed.protocol) {
+            case "http":
+                http.get(parsed,
+                    (res) => {
+                        const {statusCode} = res;
+
+                        if (statusCode >= 200 && statusCode <= 299) { //2XX is considered success
+                            let data = "";
+                            res.setEncoding("utf-8");
+                            res.on("data",
+                                (chunk => {
+                                    data += chunk;
+                                }));
+                            res.on("end",
+                                () => {
+                                    console.log(`Received data:\n${data}`);
+                                    // Actual data processing. Will a return statement work?
+                                });
+                        } else {
+                            throw new Error(`An error has occurred while sending the GET request. Host has returned status code ${statusCode}.`);
+                        }
+                    });
+                break;
+
+            case "https":
+
+                break;
+
+            //TODO: more protocol implementations
+            default:
+                throw new Error("Protocol not supported. Please use either http or https.");
+        }
     })();
 }
 
