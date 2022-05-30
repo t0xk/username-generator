@@ -52,26 +52,35 @@ const _get = (obj, parsed) => {
         throw new Error(`The 'obj' parameter holds an invalid value. Must either represent node:http or node:https!`);
     }
 
-    obj.get(parsed,
-        (res) => {
-            const {statusCode} = res;
+    return new Promise((resolve, reject) => {
+        obj.get(parsed,
+            (res) => {
+                const {statusCode} = res;
 
-            if (statusCode >= 200 && statusCode <= 299) { //2XX is considered success
-                let data = "";
-                res.setEncoding("utf-8");
-                res.on("data",
-                    (chunk => {
-                        data += chunk;
-                    }));
-                res.on("end",
-                    () => {
-                        console.log(`Received data:\n${data}`);
-                        //TODO: Actual data processing.
-                    });
-            } else {
-                throw new Error(`An error has occurred while sending the GET request. Host has returned status code ${statusCode}.`);
-            }
-        });
+                if (statusCode >= 200 && statusCode <= 299) { //2XX is considered success
+                    let data = "";
+                    res.setEncoding("utf-8");
+                    res.on("data",
+                        (chunk => {
+                            data += chunk;
+                        }));
+                    res.on("end",
+                        () => {
+                            console.log(`DEBUG: Received data:\n${data}`);
+                            //TODO: Actual data processing.
+
+                            resolve(data);
+                        })
+                        .on("error", (error) => {
+                            error.message = `An error has occurred while trying to read the response data:\n${error.message}`;
+
+                            reject(error);
+                        });
+                } else {
+                    reject(new Error(`An error has occurred while sending the GET request. Host has returned status code ${statusCode}.`));
+                }
+            });
+    });
 }
 
 /**
@@ -81,15 +90,16 @@ const _get = (obj, parsed) => {
  */
 const fetchText = (url) => {
     const parsed = new URL(url); //throws TypeError if url is not a string and/or parse-able
+    let data = null;
 
     (async () => {
         switch (parsed.protocol) {
             case "http":
-                _get(http, parsed);
+                data = await _get(http, parsed);
                 break;
 
             case "https":
-                _get(https, parsed);
+                data = await _get(https, parsed);
                 break;
 
             //TODO: more protocol implementations
@@ -97,6 +107,8 @@ const fetchText = (url) => {
                 throw new Error("Protocol not supported. Please use either http or https.");
         }
     })();
+
+    return data || "";
 }
 
 module.exports = {
